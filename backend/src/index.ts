@@ -5,7 +5,7 @@ import * as readline from "readline/promises";
 import * as dotenv from "dotenv";
 
 // 1. Configuração do ambiente
-dotenv.config({ path: path.resolve('.env') });
+dotenv.config({ path: path.resolve('../.env') });
 
 const SEPOLIA_URL = process.env.SEPOLIA_URL || "";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
