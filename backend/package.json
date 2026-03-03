@@ -14,7 +14,9 @@
   "type": "module",
   "dependencies": {
     "dotenv": "^17.3.1",
-    "ethers": "^6.16.0"
+    "ethers": "^6.16.0",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.6.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.3",
