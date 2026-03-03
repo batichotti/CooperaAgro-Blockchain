@@ -2,108 +2,91 @@ import { ethers } from "ethers";
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline/promises";
-
-// Carrega o .env que está na raiz do projeto
 import * as dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const RPC_URL = process.env.SEPOLIA_RPC_URL || "";
+// 1. Configuração do ambiente
+dotenv.config({ path: path.resolve('.env') });
+
+const SEPOLIA_URL = process.env.SEPOLIA_URL || "";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
 async function main() {
-    if (!RPC_URL || !PRIVATE_KEY) {
-        throw new Error("Verifique o .env! RPC_URL e PRIVATE_KEY são obrigatórios.");
+    if (!SEPOLIA_URL || !PRIVATE_KEY) {
+        console.error("❌ Erro: SEPOLIA_URL ou PRIVATE_KEY não encontradas no .env.");
+        process.exit(1);
     }
 
-    // 1. Identificar a pasta abis/ e listar os contratos
-    const abisDir = path.resolve(__dirname, './abis');
-    if (!fs.existsSync(abisDir)) {
-        console.error("❌ Pasta abis/ não encontrada. Rode 'npm run copy-abi' primeiro.");
-        return;
+    // 2. Configuração do Nome do Contrato (deve ser Calculator)
+    const NOME_DO_CONTRATO = "Calculator";
+    const abiPath = path.resolve(`./abis/${NOME_DO_CONTRATO}.json`);
+
+    if (!fs.existsSync(abiPath)) {
+        console.error(`❌ Erro: ABI não encontrada em ${abiPath}`);
+        console.error("Execute 'npm run copy-abi' na pasta do backend.");
+        process.exit(1);
     }
 
-    // Pega apenas os arquivos .json, ignorando arquivos de debug que o Foundry pode gerar
-    const files = fs.readdirSync(abisDir).filter(f => f.endsWith('.json') && !f.endsWith('.dbg.json'));
-
-    if (files.length === 0) {
-        console.log("❌ Nenhum contrato encontrado na pasta abis/.");
-        return;
-    }
-
-    // 2. Configurar o menu interativo no terminal
+    // 3. Interface de entrada
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
 
-    console.log("\n📦 === Contratos Disponíveis ===");
-    files.forEach((file, index) => {
-        console.log(`[${index}] - ${file.replace('.json', '')}`);
-    });
+    console.log(`\n--- 🖥️  Backend CooperaAgro: Módulo ${NOME_DO_CONTRATO} ---`);
 
-    const choice = await rl.question("\n👉 Digite o número do contrato que deseja testar: ");
-    const selectedIndex = parseInt(choice);
-
-    if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= files.length) {
-        console.log("❌ Opção inválida.");
-        rl.close();
-        return;
-    }
-
-    const selectedFile = files[selectedIndex];
-    const contractName = selectedFile.replace('.json', '');
-    console.log(`\n✅ Você selecionou: ${contractName}`);
-
-    // 3. Pedir o endereço do contrato na rede
-    const addressInput = await rl.question("📍 Cole o endereço do contrato (0x...): ");
+    const addressInput = await rl.question("📍 Cole o endereço do contrato Calculator (0x...): ");
     const contractAddress = addressInput.trim();
 
-    if (!contractAddress.startsWith('0x') || contractAddress.length !== 42) {
-        console.log("❌ Endereço inválido.");
+    if (!ethers.isAddress(contractAddress)) {
+        console.error("❌ Erro: Endereço inválido.");
         rl.close();
-        return;
+        process.exit(1);
     }
 
-    // Fecha a interface de digitação
+    // Perguntar os números para a soma
+    const n1 = await rl.question("🔢 Digite o primeiro número: ");
+    const n2 = await rl.question("🔢 Digite o segundo número: ");
+    
     rl.close();
 
-    // 4. Carregar a ABI escolhida e conectar
-    const abiPath = path.join(abisDir, selectedFile);
-    const contractJson = JSON.parse(fs.readFileSync(abiPath, 'utf8'));
-    const abi = contractJson.abi;
-
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-    const contract = new ethers.Contract(contractAddress, abi, wallet);
-
-    console.log(`\n📡 Conectado! Carteira: ${wallet.address}`);
-    console.log(`🔗 Contrato alvo: ${contractAddress}`);
-
-    // 5. Executar lógicas específicas dependendo do contrato escolhido
     try {
-        if (contractName === 'HelloWorld') {
-            console.log("\n--- 🚀 Iniciando testes do HelloWorld ---");
-            const current = await contract.getGreeting();
-            console.log(`🔍 Mensagem atual na rede: "${current}"`);
+        // 4. Inicialização
+        const contractFile = fs.readFileSync(abiPath, 'utf8');
+        const abi = JSON.parse(contractFile).abi;
 
-            console.log("✍️  Atualizando mensagem (aguardando mineração)...");
-            const tx = await contract.setGreeting(`Atualizado pelo terminal as ${new Date().toLocaleTimeString()}`);
-            await tx.wait();
+        const provider = new ethers.JsonRpcProvider(SEPOLIA_URL);
+        const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-            const updated = await contract.getGreeting();
-            console.log(`✅ Nova mensagem confirmada: "${updated}"\n`);
+        console.log(`\n🔗 Conectado à Sepolia | Carteira: ${wallet.address}`);
 
-        } else if (contractName === 'TrackingCertification') {
-            console.log("\n--- 🚛 Iniciando testes do TrackingCertification ---");
-            console.log("A instância está pronta! Adicione as chamadas de registerCollection aqui.");
+        // 5. Executando a SOMA (Escrita - Gasta Gás)
+        console.log(`\n⏳ Enviando transação: add(${n1}, ${n2})...`);
+        
+        // Convertendo para BigInt para o ethers lidar com uint256 do Solidity
+        const tx = await contract.add(BigInt(n1), BigInt(n2));
+        
+        console.log(`📡 Transação enviada! Hash: ${tx.hash}`);
+        console.log("⏳ Aguardando confirmação do bloco...");
+        
+        await tx.wait(); // Espera a mineração
+        console.log("✅ Transação confirmada com sucesso!");
 
-        } else {
-            console.log("\n✅ Contrato carregado com sucesso na memória.");
-            console.log("Para testar as funções dele, adicione um bloco 'else if' no index.ts.");
-        }
-    } catch (error) {
-        console.error("\n❌ Erro ao interagir com a blockchain:", error);
+        // 6. Lendo o resultado (Leitura - Grátis)
+        console.log("\n🔍 Consultando 'ultimo_resultado' no contrato...");
+        const resultado = await contract.get();
+
+        console.log("------------------------------------------");
+        console.log(`📊 RESULTADO DA SOMA: ${resultado.toString()}`);
+        console.log("------------------------------------------\n");
+
+    } catch (error: any) {
+        console.error("\n❌ Erro na operação:");
+        console.error(error.reason || error.message || error);
     }
 }
 
-main();
+main().catch((error) => {
+    console.error("Erro crítico:", error);
+    process.exit(1);
+});
