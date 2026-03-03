@@ -1,20 +1,13 @@
-import { ethers } from "hardhat";
+import { network } from "hardhat";
 
-async function main() {
-  const Contract = await ethers.getContractFactory("CooperaAgro");
+const { viem, networkName } = await network.connect();
+const publicClient = await viem.getPublicClient();
 
-  console.log("Deploying contract...");
+console.log(`Deploying CooperaAgro to ${networkName}...`);
 
-  const contract = await Contract.deploy();
+// se seu constructor for vazio:
+const cooperaAgro = await viem.deployContract("CooperaAgro");
 
-  await contract.waitForDeployment();
+console.log("Contract address:", cooperaAgro.address);
 
-  const address = await contract.getAddress();
-
-  console.log("Contract deployed to:", address);
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+console.log("Deployment successful!");
