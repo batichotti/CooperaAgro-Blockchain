@@ -1,0 +1,17 @@
+participants:
+  - el_type: geth
+    cl_type: lighthouse
+  - el_type: geth
+    cl_type: lighthouse
+
+network_params:
+  network_id: "69696969"
+  deposit_contract_address: "0x6969696969696969696969696969696969696969"
+  seconds_per_slot: 12
+  genesis_delay: 120
+  capella_fork_epoch: 0
+  deneb_fork_epoch: 0
+  prefunded_accounts: '{ "0xB85b52aF6D7A7ed1B1B1c49F202B240ED9134CC3": { "balance": "1000000000000000000000" } }'
+
+additional_services:
+  - blockscout
