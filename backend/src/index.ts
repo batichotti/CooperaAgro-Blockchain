@@ -4,7 +4,6 @@ import * as path from "path";
 import * as readline from "readline/promises";
 import * as dotenv from "dotenv";
 
-// 1. Configuração do ambiente
 dotenv.config({ path: path.resolve('../.env') });
 
 const SEPOLIA_URL = process.env.SEPOLIA_URL || "";
@@ -12,81 +11,76 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
 async function main() {
     if (!SEPOLIA_URL || !PRIVATE_KEY) {
-        console.error("❌ Erro: SEPOLIA_URL ou PRIVATE_KEY não encontradas no .env.");
+        console.error("❌ Erro: SEPOLIA_URL ou PRIVATE_KEY não encontradas.");
         process.exit(1);
     }
 
-    // 2. Configuração do Nome do Contrato (deve ser Calculator)
-    const NOME_DO_CONTRATO = "Calculator";
+    const NOME_DO_CONTRATO = "MultiCalculator";
     const abiPath = path.resolve(`./abis/${NOME_DO_CONTRATO}.json`);
 
     if (!fs.existsSync(abiPath)) {
-        console.error(`❌ Erro: ABI não encontrada em ${abiPath}`);
-        console.error("Execute 'npm run copy-abi' na pasta do backend.");
+        console.error(`❌ Erro: ABI ${NOME_DO_CONTRATO}.json não encontrada.`);
         process.exit(1);
     }
 
-    // 3. Interface de entrada
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-    console.log(`\n--- 🖥️  Backend CooperaAgro: Módulo ${NOME_DO_CONTRATO} ---`);
-
-    const addressInput = await rl.question("📍 Cole o endereço do contrato Calculator (0x...): ");
-    const contractAddress = addressInput.trim();
-
-    if (!ethers.isAddress(contractAddress)) {
-        console.error("❌ Erro: Endereço inválido.");
-        rl.close();
-        process.exit(1);
-    }
-
-    // Perguntar os números para a soma
-    const n1 = await rl.question("🔢 Digite o primeiro número: ");
-    const n2 = await rl.question("🔢 Digite o segundo número: ");
-    
-    rl.close();
+    console.log(`\n--- 🖥️  Backend CooperaAgro: ${NOME_DO_CONTRATO} ---`);
+    const contractAddress = (await rl.question("📍 Endereço do contrato: ")).trim();
 
     try {
-        // 4. Inicialização
-        const contractFile = fs.readFileSync(abiPath, 'utf8');
-        const abi = JSON.parse(contractFile).abi;
-
+        const abi = JSON.parse(fs.readFileSync(abiPath, 'utf8')).abi;
         const provider = new ethers.JsonRpcProvider(SEPOLIA_URL);
         const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
         const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-        console.log(`\n🔗 Conectado à Sepolia | Carteira: ${wallet.address}`);
+        console.log(`\n[1] Criar Novo ID (create_instance)`);
+        console.log(`[2] Realizar Operação em ID existente`);
+        console.log(`[3] Obtem o Número Gravado no ID existente`);
+        const op = await rl.question("\n👉 Escolha uma opção: ");
 
-        // 5. Executando a SOMA (Escrita - Gasta Gás)
-        console.log(`\n⏳ Enviando transação: add(${n1}, ${n2})...`);
-        
-        // Convertendo para BigInt para o ethers lidar com uint256 do Solidity
-        const tx = await contract.add(BigInt(n1), BigInt(n2));
-        
-        console.log(`📡 Transação enviada! Hash: ${tx.hash}`);
-        console.log("⏳ Aguardando confirmação do bloco...");
-        
-        await tx.wait(); // Espera a mineração
-        console.log("✅ Transação confirmada com sucesso!");
+        if (op === "1") {
+            console.log("⏳ Gerando novo ID na blockchain...");
+            const tx = await contract.create_instance();
+            const receipt = await tx.wait();
+            
+            // Opcional: Pegar o valor retornado via eventos ou nova consulta
+            console.log(`✅ Novo ID criado! Verifique o log ou consulte o contador.`);
+        } 
+        else if (op === "2") {
+            const id = await rl.question("🆔 Digite o ID de rastreamento: ");
+            console.log("\n[+] Somar | [-] Subtrair | [*] Multiplicar | [/] Dividir");
+            const acao = await rl.question("👉 Escolha a operação: ");
+            
+            const n1 = await rl.question("🔢 Número 1: ");
+            const n2 = await rl.question("🔢 Número 2: ");
 
-        // 6. Lendo o resultado (Leitura - Grátis)
-        console.log("\n🔍 Consultando 'ultimo_resultado' no contrato...");
-        const resultado = await contract.get();
+            let tx;
+            if (acao === "+") tx = await contract.add(id, n1, n2);
+            else if (acao === "-") tx = await contract.sub(id, n1, n2);
+            else if (acao === "*") tx = await contract.mult(id, n1, n2);
+            else if (acao === "/") tx = await contract.div(id, n1, n2);
+            else throw new Error("Operação inválida");
 
-        console.log("------------------------------------------");
-        console.log(`📊 RESULTADO DA SOMA: ${resultado.toString()}`);
-        console.log("------------------------------------------\n");
+            console.log(`⏳ Processando transação... ${tx.hash}`);
+            await tx.wait();
+            
+            const res = await contract.get(id);
+            console.log(`\n✅ Sucesso! Resultado no ID ${id}: ${res.toString()}`);
+        }
+        else if (op == "3") {
+            const id = await rl.question("🆔 Digite o ID de rastreamento: ");
+            const res = await contract.get(id);
+            console.log(`\n✅ Sucesso! Resultado no ID ${id}: ${res.toString()}`);
+        }
 
     } catch (error: any) {
         console.error("\n❌ Erro na operação:");
-        console.error(error.reason || error.message || error);
+        // Captura os erros customizados do seu Solidity (InvalidId, DivisionByZero, etc)
+        console.error(error.reason || error.message);
+    } finally {
+        rl.close();
     }
 }
 
-main().catch((error) => {
-    console.error("Erro crítico:", error);
-    process.exit(1);
-});
+main().catch(console.error);

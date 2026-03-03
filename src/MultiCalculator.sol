@@ -11,34 +11,34 @@ contract MultiCalculator{
         return ++id_counter;
     }
 
-    error InvalidId(uint256 requested, uint256 available);
-    error DivisionByZero();
-    error NegativeResult();
+    error IdOutOfBounds(uint256 providedId, uint256 maximumAllowedId);
+
+    function check_id(uint256 id_rastreamento) public view {
+        if(id_rastreamento > id_counter) revert IdOutOfBounds(id_rastreamento, id_counter);
+    }
 
     function add(uint256 id_rastreamento, uint256 numero1, uint256 numero2 ) public {
-        require(id_rastreamento > id_counter, InvalidId(id_rastreamento, id_counter));
+        check_id(id_rastreamento);
         ultimo_resultado[id_rastreamento] = numero1 + numero2;
     }
 
     function sub(uint256 id_rastreamento, uint256 numero1, uint256 numero2 ) public {
-        require(id_rastreamento > id_counter, InvalidId(id_rastreamento, id_counter));
-        if (numero2 > numero1) revert NegativeResult();
+        check_id(id_rastreamento);
         ultimo_resultado[id_rastreamento] = numero1 - numero2;
     }
 
     function mult(uint256 id_rastreamento, uint256 numero1, uint256 numero2 ) public {
-        require(id_rastreamento > id_counter, InvalidId(id_rastreamento, id_counter));
+        check_id(id_rastreamento);
         ultimo_resultado[id_rastreamento] = numero1 * numero2;
     }
 
     function div(uint256 id_rastreamento, uint256 numero1, uint256 numero2 ) public {
-        require(id_rastreamento > id_counter, InvalidId(id_rastreamento, id_counter));
-        if (numero2 == 0) revert DivisionByZero();
+        check_id(id_rastreamento);
         ultimo_resultado[id_rastreamento] = numero1 / numero2;
     }
 
     function get(uint256 id_rastreamento) public view returns(uint256){
-        require(id_rastreamento > id_counter, InvalidId(id_rastreamento, id_counter));
+        check_id(id_rastreamento);
         return ultimo_resultado[id_rastreamento];
     }
 
