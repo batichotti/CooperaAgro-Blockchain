@@ -8,7 +8,8 @@ contract MultiCalculator{
     uint256 id_counter = 0;
 
     function create_instance() public returns(uint256){
-        return ++id_counter;
+        id_counter += 1;
+        return id_counter;
     }
 
     error IdOutOfBounds(uint256 providedId, uint256 maximumAllowedId);
