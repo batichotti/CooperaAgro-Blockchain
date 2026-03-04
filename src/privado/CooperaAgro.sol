@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.31;
-// L1: Deploy custou 0,00XX ETH + 1 Ciclo que custou 0,00XX ETH
+// L1: Deploy custou 0,0020 ETH + 1 Ciclo que custou 0,0021 ETH
+// L2: Deploy custou 0,00XX ETH + 1 Ciclo que custou 0,00XX ETH
 contract CooperaAgro { 
 
     enum ESTADO_DO_CONTRATO {
@@ -79,7 +80,7 @@ contract CooperaAgro {
 
     function cooperativaConfirmarEntrega(uint256 _id_contrato, Item[] memory _pacote) 
         public 
-        apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.PRODUTOS_COMPRADOS) 
+        apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.PACOTE_ENVIADO_PARA_COOPERATIVA) 
     {
         for (uint i = 0; i < _pacote.length; i++) {
             pacotes_recebidos_cooperativa[_id_contrato].push(_pacote[i]);
@@ -103,7 +104,7 @@ contract CooperaAgro {
             pacotes_escolas[_id_contrato][_id_escola].push(_pacote[i]);
         }
 
-        if (estados[_id_contrato] == ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS) {
+        if (estados[_id_contrato] != ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS) {
             estados[_id_contrato] = ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS;
         }
     }
