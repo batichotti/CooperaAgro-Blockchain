@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.31;
-// L1: Deploy custou 0,002354 ETH + 1 Ciclo completo custou 0,001745 ETH
+// L1: Deploy custou 0,00XX ETH + 1 Ciclo que custou 0,00XX ETH
 contract CooperaAgro { 
 
     enum ESTADO_DO_CONTRATO {
@@ -28,10 +28,13 @@ contract CooperaAgro {
     mapping(uint256 => Item[]) private ofertas;
     mapping(uint256 => Item[]) private compras;
     mapping(uint256 => uint256[]) public valores_por_contrato;
+    mapping(uint256 => Item[]) private pacotes_enviados_produtor;
+    mapping(uint256 => Item[]) private pacotes_recebidos_cooperativa;
 
     // Relacionamento: id_contrato => id_escola => Itens
     mapping(uint256 => mapping(uint256 => Item[])) private pacotes_escolas;    
-    mapping(uint256 => uint256[]) public escolas_que_confirmaram;
+    mapping(uint256 => mapping(uint256 => Item[])) private pacotes_recebidos_por_escolas;
+    mapping(uint256 => uint256) public escolas_que_confirmaram;
 
     // --- Modifiers ---
     modifier apenasNoEstado(uint256 _id_contrato, ESTADO_DO_CONTRATO _estado) {
@@ -46,7 +49,9 @@ contract CooperaAgro {
         apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.CONTRATO_CRIADO) 
     {
         produtores[_id_contrato] = _id_produtor;
-        ofertas[_id_contrato] = _oferta;
+        for (uint i = 0; i < _oferta.length; i++) {
+            ofertas[_id_contrato].push(_oferta[i]);
+        }
         estados[_id_contrato] = ESTADO_DO_CONTRATO.PRODUTOS_OFERTADOS;
     }
 
@@ -56,21 +61,29 @@ contract CooperaAgro {
     {
         cooperativas[_id_contrato] = _id_cooperativa;
         valores_por_contrato[_id_contrato] = _valores;
-        compras[_id_contrato] = _compra;
+        for (uint i = 0; i < _compra.length; i++) {
+            compras[_id_contrato].push(_compra[i]);
+        }
         estados[_id_contrato] = ESTADO_DO_CONTRATO.PRODUTOS_COMPRADOS;
     }
 
-    function produtorEnviarPacote(uint256 _id_contrato) 
+    function produtorEnviarPacote(uint256 _id_contrato, Item[] memory _pacote) 
         public 
         apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.PRODUTOS_COMPRADOS) 
     {
+        for (uint i = 0; i < _pacote.length; i++) {
+            pacotes_enviados_produtor[_id_contrato].push(_pacote[i]);
+        }
         estados[_id_contrato] = ESTADO_DO_CONTRATO.PACOTE_ENVIADO_PARA_COOPERATIVA;
     }
 
-    function cooperativaConfirmarEntrega(uint256 _id_contrato) 
+    function cooperativaConfirmarEntrega(uint256 _id_contrato, Item[] memory _pacote) 
         public 
-        apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.PACOTE_ENVIADO_PARA_COOPERATIVA) 
+        apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.PRODUTOS_COMPRADOS) 
     {
+        for (uint i = 0; i < _pacote.length; i++) {
+            pacotes_recebidos_cooperativa[_id_contrato].push(_pacote[i]);
+        }
         estados[_id_contrato] = ESTADO_DO_CONTRATO.PACOTE_RECEBIDO_PELA_COOPERATIVA;
     }
 
@@ -86,20 +99,26 @@ contract CooperaAgro {
         // Registro da escola no contrato
         escolas_por_contrato[_id_contrato].push(_id_escola);
 
-        pacotes_escolas[_id_contrato][_id_escola] = _pacote;
+        for (uint i = 0; i < _pacote.length; i++) {
+            pacotes_escolas[_id_contrato][_id_escola].push(_pacote[i]);
+        }
+
         if (estados[_id_contrato] == ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS) {
             estados[_id_contrato] = ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS;
         }
     }
 
-    function escolaConfirmarEntrega(uint256 _id_contrato, uint256 _id_escola, bool _tem_sobra_no_estoque) 
+    function escolaConfirmarEntrega(uint256 _id_contrato, uint256 _id_escola, Item[] memory _pacote, bool _tem_sobra_no_estoque) 
         public 
         apenasNoEstado(_id_contrato, ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS) 
     {
-        escolas_que_confirmaram[_id_contrato].push(_id_escola);
+        for (uint i = 0; i < _pacote.length; i++) {
+            pacotes_recebidos_por_escolas[_id_contrato][_id_escola].push(_pacote[i]);
+        }
+        escolas_que_confirmaram[_id_contrato] ++;
 
         // Validação de estoque zerado para o contrato específico
-        if ( (escolas_que_confirmaram[_id_contrato].length == escolas_por_contrato[_id_contrato].length) && !_tem_sobra_no_estoque) {
+        if ( (escolas_que_confirmaram[_id_contrato] == escolas_por_contrato[_id_contrato].length) && !_tem_sobra_no_estoque) {
             estados[_id_contrato] = ESTADO_DO_CONTRATO.TODOS_PACOTES_RECEBIDO_PELAS_ESCOLAS;
         }
     }
