@@ -82,6 +82,7 @@ contract CooperaAgro {
         @dev Produtor define quais e quantos produtos serão ofertados
     */
     function produtorOfertar(uint256 _id_produtor, Item memory _oferta) public {
+        // if(estado_do_contrato != CONTRATO_CRIADO) return
         // id_produtor = _id_produtor;
         // pacote_ofertado.itens = _oferta;
         // atualizar estado
@@ -91,6 +92,7 @@ contract CooperaAgro {
         @dev Cooperativa escolhe quais e quantos produtos vai comprar e qual valor de cada produto
     */
     function cooperativaComprar(uint256 _id_cooperativa, Item memory _compra, uint256[] memory _valores) public {
+        // if(estado_do_contrato != PRODUTOS_OFERTADOS) return
         // id_cooperativa = _id_cooperativa;
         // pacote_ofertado.itens = _oferta;
         // valores = _valores;
@@ -101,6 +103,7 @@ contract CooperaAgro {
         @dev Produtor envia o pacote com os itens requisitados
     */
     function produtorEnviarPacote() public {
+        // if(estado_do_contrato != PRODUTOS_COMPRADOS) return
         // atualizar estado 
     }
 
@@ -108,6 +111,7 @@ contract CooperaAgro {
         @dev Cooperativa confirma q recebeu o pacote e atualiza q tem itens disponiveis para entregar
     */
     function cooperativaConfirmarEntrega() public {
+        // if(estado_do_contrato != PACOTE_ENVIADO_PARA_COOPERATIVA) return
         // itens_comprados_disponiveis = true
         // atualizar estado
     }
@@ -117,22 +121,31 @@ contract CooperaAgro {
         soma o contador de escolas, quando acabar todos itens disponivei atualiza a tag
     */
     function cooperativaEnviarPacote(uint256 _id_escola, Item memory _pacote) public {
+        // if(estado_do_contrato != PACOTE_ENVIADO_PARA_COOPERATIVA || estado_do_contrato != ENVIANDO_PACOTES_PARA_ESCOLAS) return
+
         /*
         temp
         for item in pacote_comprados
             temp += qtd
         
         if (temp > 0)
-        pacotes_escolas[_id_escola] = _pacote
+            pacotes_escolas[_id_escola] = _pacote
+            qtd_escolas++;
+            if (estado_do_contrato != ENVIANDO_PACOTES_PARA_ESCOLAS)
+            atualizar estadp
         */
     }
 
     /*
-        @dev Escola confirma o pecebimento dos produtos, diminui o contador de escolas q receberam o pacote,
+        @dev Escola confirma o pecebimento dos produtos, aumenta o contador de escolas q receberam o pacote,
         quando o contador de escolas q receberam os pacotes for igual ao contador de escolas cadastradas
         e quando acabar os itens em estoque finalizar o contrato atualizando para TODOS_PACOTES_RECEBIDO_PELAS_ESCOLAS
     */
     function escolaConfirmarEntrega(uint256 _id_escola) public {
+    // if (qtd_escolas = ++pacotes_escolas_entregues && !is_itens_comprados_disponiveis) {
+        // if(estado_do_contrato != ENVIANDO_PACOTES_PARA_ESCOLAS) return
+        atualizar estado finalizar contrato
+    }
     }
 
     // Getters ===============================================
