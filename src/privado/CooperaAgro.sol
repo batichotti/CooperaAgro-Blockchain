@@ -1,44 +1,8 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.31;
-
-/*
-Produtor oferta os itens ->
-10 x Cenouras
-40 x Batatas
-20 x Repolhos
-
-Cooperativa fala o tanto que quer e q valor vai pagar ->
-5 x Cenouras (R$ 3,00 unidade (300 normalizado para o código))
-30 x Batatas (R$ 2,00 unidade (200 normalizado para o código))
-7 x Repolhos (R$ 2,75 unidade (275 normalizado para o código))
-
-Cooperativa compra
-
-Pordutor manda os itens e fica com o resto q a coperativa n comprou
-
-Cooperativa recebe
-
-Cooperativa manda para escolas
-Escola Capo Alegre
-1 x Cenouras
-15 x Batatas
-3 x Repolhos
-Escola Sorridente
-2 x Cenouras
-7 x Batatas
-2 x Repolhos
-Escola Arcoires Fantastico
-
-Cada escolas confirmam recebimento
-5 x Cenouras
-30 x Batatas
-7 x Repolhos
-*/
 
 contract CooperaAgro {
 
-    // Progresso do contrato ==========================
     enum ESTADO_DO_CONTRATO {
         CONTRATO_CRIADO,
         PRODUTOS_OFERTADOS,
@@ -49,141 +13,101 @@ contract CooperaAgro {
         TODOS_PACOTES_RECEBIDO_PELAS_ESCOLAS
     }
 
-    // Produtos ===================================
     struct Item {
         uint256 id_produto;
         uint256 qtd;
     }
 
-
-    // Variáveis de controle ==============================================
-    // id_contrato; -> vem do backend
-
-    ESTADO_DO_CONTRATO estado_do_contrato = ESTADO_DO_CONTRATO.CONTRATO_CRIADO;
+    ESTADO_DO_CONTRATO public estado_do_contrato = ESTADO_DO_CONTRATO.CONTRATO_CRIADO;
     
-    uint256 id_produtor;
-    uint256 id_cooperativa;
-    uint256[] id_escolas;
-    uint256 qtd_escolas;
-
-    Item[] pacote_ofertado;
-
-    Item[] pacote_comprado;
-    bool is_itens_comprados_disponiveis = false;
-    uint256[] valores; // relação idx de itens no pacote_comprado com o seu valor
-
-    mapping(uint256 => Item[]) pacotes_escolas; // relação id da escola com seu pacote
-    uint256 pacotes_escolas_entregues;
-
-
-    // Requisitos Funcionais ===============================================
+    uint256 public id_produtor;
+    uint256 public id_cooperativa;
+    uint256[] public id_escolas;
     
-    /*
-        @dev Produtor define quais e quantos produtos serão ofertados
-    */
-    function produtorOfertar(uint256 _id_produtor, Item memory _oferta) public {
-        // if(estado_do_contrato != CONTRATO_CRIADO) return
-        // id_produtor = _id_produtor;
-        // pacote_ofertado.itens = _oferta;
-        // atualizar estado
+    Item[] public pacote_ofertado;
+    Item[] public pacote_comprado;
+    uint256[] public valores; 
+
+    mapping(uint256 => Item[]) public pacotes_escolas;
+    mapping(uint256 => bool) public escola_recebeu;
+    uint256 public pacotes_escolas_entregues;
+
+    modifier apenasNoEstado(ESTADO_DO_CONTRATO _estado) {
+        require(estado_do_contrato == _estado, "Estado invalido");
+        _;
     }
 
-    /*
-        @dev Cooperativa escolhe quais e quantos produtos vai comprar e qual valor de cada produto
-    */
-    function cooperativaComprar(uint256 _id_cooperativa, Item memory _compra, uint256[] memory _valores) public {
-        // if(estado_do_contrato != PRODUTOS_OFERTADOS) return
-        // id_cooperativa = _id_cooperativa;
-        // pacote_ofertado.itens = _oferta;
-        // valores = _valores;
-        // atualizar estado
+    function produtorOfertar(uint256 _id_produtor, Item[] memory _oferta) public apenasNoEstado(ESTADO_DO_CONTRATO.CONTRATO_CRIADO) {
+        id_produtor = _id_produtor;
+        for (uint i = 0; i < _oferta.length; i++) {
+            pacote_ofertado.push(_oferta[i]);
+        }
+        estado_do_contrato = ESTADO_DO_CONTRATO.PRODUTOS_OFERTADOS;
     }
 
-    /*
-        @dev Produtor envia o pacote com os itens requisitados
-    */
-    function produtorEnviarPacote() public {
-        // if(estado_do_contrato != PRODUTOS_COMPRADOS) return
-        // atualizar estado 
+    function cooperativaComprar(uint256 _id_cooperativa, Item[] memory _compra, uint256[] memory _valores) public apenasNoEstado(ESTADO_DO_CONTRATO.PRODUTOS_OFERTADOS) {
+        id_cooperativa = _id_cooperativa;
+        for (uint i = 0; i < _compra.length; i++) {
+            pacote_comprado.push(_compra[i]);
+            valores.push(_valores[i]);
+        }
+        estado_do_contrato = ESTADO_DO_CONTRATO.PRODUTOS_COMPRADOS;
     }
 
-    /*
-        @dev Cooperativa confirma q recebeu o pacote e atualiza q tem itens disponiveis para entregar
-    */
-    function cooperativaConfirmarEntrega() public {
-        // if(estado_do_contrato != PACOTE_ENVIADO_PARA_COOPERATIVA) return
-        // itens_comprados_disponiveis = true
-        // atualizar estado
+    function produtorEnviarPacote() public apenasNoEstado(ESTADO_DO_CONTRATO.PRODUTOS_COMPRADOS) {
+        estado_do_contrato = ESTADO_DO_CONTRATO.PACOTE_ENVIADO_PARA_COOPERATIVA;
     }
 
-    /*
-        @dev Cooperativa manda um pacote para cada escola enquanto houver itens disponiveis,
-        soma o contador de escolas, quando acabar todos itens disponivei atualiza a tag
-    */
-    function cooperativaEnviarPacote(uint256 _id_escola, Item memory _pacote) public {
-        // if(estado_do_contrato != PACOTE_ENVIADO_PARA_COOPERATIVA || estado_do_contrato != ENVIANDO_PACOTES_PARA_ESCOLAS) return
-
-        /*
-        temp
-        for item in pacote_comprados
-            temp += qtd
-        
-        if (temp > 0)
-            pacotes_escolas[_id_escola] = _pacote
-            qtd_escolas++;
-            if (estado_do_contrato != ENVIANDO_PACOTES_PARA_ESCOLAS)
-            atualizar estadp
-        */
+    function cooperativaConfirmarEntrega() public apenasNoEstado(ESTADO_DO_CONTRATO.PACOTE_ENVIADO_PARA_COOPERATIVA) {
+        estado_do_contrato = ESTADO_DO_CONTRATO.PACOTE_RECEBIDO_PELA_COOPERATIVA;
     }
 
-    /*
-        @dev Escola confirma o pecebimento dos produtos, aumenta o contador de escolas q receberam o pacote,
-        quando o contador de escolas q receberam os pacotes for igual ao contador de escolas cadastradas
-        e quando acabar os itens em estoque finalizar o contrato atualizando para TODOS_PACOTES_RECEBIDO_PELAS_ESCOLAS
-    */
-    function escolaConfirmarEntrega(uint256 _id_escola) public {
-    // if (qtd_escolas = ++pacotes_escolas_entregues && !is_itens_comprados_disponiveis) {
-        // if(estado_do_contrato != ENVIANDO_PACOTES_PARA_ESCOLAS) return
-        atualizar estado finalizar contrato
-    }
+    function cooperativaEnviarPacote(uint256 _id_escola, Item[] memory _pacote) public {
+        require(
+            estado_do_contrato == ESTADO_DO_CONTRATO.PACOTE_RECEBIDO_PELA_COOPERATIVA || 
+            estado_do_contrato == ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS,
+            "Estado invalido"
+        );
+
+        // Adiciona à lista de escolas se for nova
+        bool existe = false;
+        for(uint i=0; i < id_escolas.length; i++) {
+            if(id_escolas[i] == _id_escola) { existe = true; break; }
+        }
+        if(!existe) id_escolas.push(_id_escola);
+
+        // Abate do estoque e registra envio
+        for (uint i = 0; i < _pacote.length; i++) {
+            bool produtoEncontrado = false;
+            for (uint j = 0; j < pacote_comprado.length; j++) {
+                if (pacote_comprado[j].id_produto == _pacote[i].id_produto) {
+                    require(pacote_comprado[j].qtd >= _pacote[i].qtd, "Qtd insuficiente no estoque");
+                    pacote_comprado[j].qtd -= _pacote[i].qtd;
+                    produtoEncontrado = true;
+                    break;
+                }
+            }
+            require(produtoEncontrado, "Produto nao consta na compra");
+            pacotes_escolas[_id_escola].push(_pacote[i]);
+        }
+
+        estado_do_contrato = ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS;
     }
 
-    // Getters ===============================================
+    function escolaConfirmarEntrega(uint256 _id_escola) public apenasNoEstado(ESTADO_DO_CONTRATO.ENVIANDO_PACOTES_PARA_ESCOLAS) {
+        require(!escola_recebeu[_id_escola], "Escola ja confirmou");
+        escola_recebeu[_id_escola] = true;
+        pacotes_escolas_entregues++;
 
-    function getEstadoContrato() public view returns(ESTADO_DO_CONTRATO){
-        return estado_do_contrato;
-    }
+        // VERIFICAÇÃO DE ESTOQUE VAZIO
+        uint256 saldoTotalRestante = 0;
+        for (uint i = 0; i < pacote_comprado.length; i++) {
+            saldoTotalRestante += pacote_comprado[i].qtd;
+        }
 
-    function getIdProdutor() public view returns(uint256){
-        return id_produtor;
+        // Condição: Todas confirmaram E não há mais itens disponíveis
+        if (pacotes_escolas_entregues == id_escolas.length && saldoTotalRestante == 0) {
+            estado_do_contrato = ESTADO_DO_CONTRATO.TODOS_PACOTES_RECEBIDO_PELAS_ESCOLAS;
+        }
     }
-
-    function getIdCooperativa() public view returns(uint256){
-        return id_cooperativa;
-    }
-
-    function getIdEscolas() public view returns(uint256[] memory){
-        return id_escolas;
-    }
-    
-    function getIdEscola(uint256 _pos) public view returns(uint256){
-        return id_escolas[_pos];
-    }
-
-    function getPacoteOfertado() public view returns (Item[] memory) {
-        return pacote_ofertado;
-    }
-    
-    function getPacoteComprado() public view returns (Item[] memory) {
-        return pacote_comprado;
-    }
-
-    function getPacotesEscolas(uint256 _id_escola) public view returns (Item[] memory) {
-        return pacotes_escolas[_id_escola];
-    }
-
-    function getPacotesEscolasEntregues() public view returns (uint256) {
-        return pacotes_escolas_entregues;
-    }
-
 }
