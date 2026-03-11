@@ -1,0 +1,10 @@
+{
+    "produtor": "Jorge Testovaldo da Silva",
+    "produção": "Plantção de Erva Mate",
+    "timestamp": "2023-10-27T14:30:00Z",
+    "geolocalizacao": {
+        "lat": -3.119,
+        "long": -60.021
+    },
+    "evidencia_visual": "ipfs://CID_DA_FOTO_AQUI"
+}
