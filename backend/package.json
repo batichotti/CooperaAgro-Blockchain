@@ -6,7 +6,8 @@
   "scripts": {
     "cp-abis": "cp ../out/*/*json ./abis/",
     "cp-abis-f": "cp -f ../out/*/*json ./abis/",
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts",
+    "start:ipfs": "ts-node src/ipfs.ts"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +17,8 @@
     "dotenv": "^17.3.1",
     "ethers": "^6.16.0",
     "keccak256": "^1.0.6",
-    "merkletreejs": "^0.6.0"
+    "merkletreejs": "^0.6.0",
+    "pinata-web3": "^0.5.4"
   },
   "devDependencies": {
     "@types/node": "^25.3.3",
