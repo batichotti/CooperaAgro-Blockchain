@@ -23,4 +23,21 @@ async function uploadImage(imagePath: string) {
   console.log("   URL:", `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`);
 }
 
-uploadImage("public/res/test/test.jpg").catch(console.error);
+async function getFile(cid: string, outputPath: string) {
+  console.log(`🔍 Buscando arquivo com CID: ${cid}`);
+
+  const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar arquivo: ${response.status} ${response.statusText}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  fs.writeFileSync(outputPath, buffer);
+
+  console.log("✅ Arquivo salvo em:", outputPath);
+}
+
+// uploadImage("public/res/test/test.jpg").catch(console.error);
+
+getFile("bafybeifh54tx4yu6jzsqskersfc2jcinpap35pruz6q5eg36lbtq2u65y4", "public/res/test/test_retrived.jpg").catch(console.error);
