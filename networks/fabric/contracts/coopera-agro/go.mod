@@ -1,4 +1,4 @@
-module meu-contrato
+module coopera-agro
 
 go 1.26.1
 
