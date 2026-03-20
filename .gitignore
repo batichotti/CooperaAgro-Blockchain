@@ -15,3 +15,7 @@ docs/
 
 besu/data/
 fabric/fabric-samples/
+
+vendor/
+node_modules/
+dist/

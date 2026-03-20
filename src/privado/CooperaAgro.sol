@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.31;
-// L1 (RemixIDE): Deploy custou 0,0020 ETH + 1 Ciclo que custou 0,0021 ETH
-// L1 (Foundry): Deploy custou 0,000001 ETH + 1 Ciclo que custou 0,00XX ETH
+// L1 TestNet (RemixIDE): Deploy custou 0,0020 ETH + 1 Ciclo que custou 0,0021 ETH
+// L1 TestNet (Foundry): Deploy custou 0,000001 ETH + 1 Ciclo que custou 0,00XX ETH
 // L2: Deploy custou 0,00XX ETH + 1 Ciclo que custou 0,00XX ETH
 contract CooperaAgro {
 
