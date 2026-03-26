@@ -1,3 +1,11 @@
 # CooperaAgro Blockchain
 
-## Comparison between methods
+## Types of Blockchain
+
+### Mainnet & L2
+
+### Local
+
+### Hybrid
+
+## Which one to choose?
