@@ -297,13 +297,13 @@ contract PublicNotary {
 }
 ```
 
-#### L1 (Mainnet) TestNet
-- Deploy custou 0,00XX ETH
-- 1 Ciclo que custou 0,00XX ETH
+#### L1 (Mainnet) TestNet Sepolia
+- Deploy custou 0,00000048 ETH (~0,00098 USD)
+- 1 Ciclo que custou 0,00000007 ETH (~0,00014 USD)
 
-#### L2 (Polygon)
-- Deploy custou 0,00XX ETH
-- 1 Ciclo que custou 0,00XX ETH
+#### L2 (Polygon) TestNet Amoy
+- Deploy custou 0,00000301 ETH (~0,0061 USD)
+- 1 Ciclo que custou 0,00000053 ETH (~0,0011 USD)
 
 ### Custo para manter uma Rede Privada
 
