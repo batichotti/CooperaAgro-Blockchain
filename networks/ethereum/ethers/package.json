@@ -7,6 +7,7 @@
     "cp-abis": "cp ../out/*/*json ./abis/",
     "cp-abis-f": "cp -f ../out/*/*json ./abis/",
     "start": "ts-node src/index.ts",
+    "start:contract": "ts-node src/contratoCooperaAgro.ts",
     "start:ipfs": "ts-node src/ipfs.ts"
   },
   "keywords": [],

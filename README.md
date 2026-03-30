@@ -271,13 +271,13 @@ contract CooperaAgro {
 }
 ```
 
-#### L1 (Mainnet) TestNet
-- Deploy custou 0,000001 ETH
-- 1 Ciclo que custou 0,00XX ETH
+#### L1 (Mainnet) TestNet Sepolia
+- Deploy custou 0,00000147 ETH (~0,0029 USD)
+- 1 Ciclo que custou 0,00000103 ETH (~0,0021 USD)
 
-#### L2 (Polygon)
-- Deploy custou 0,00XX ETH
-- 1 Ciclo que custou 0,00XX ETH
+#### L2 (Polygon) Testnet Amoy
+- Deploy custou 0,00000484 ETH (~0,0096 USD)
+- 1 Ciclo que custou 0,00000371 ETH (~0,0074 USD)
 
 ### Custos para guardar a Merkle Tree
 
