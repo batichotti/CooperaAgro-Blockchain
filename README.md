@@ -338,8 +338,26 @@ Comparação entre rodar uma rede Ethereum (Geth/Besu) ou em Hyperleger Fabric
 
 ### Custo para manter uma Rede Híbrida
 
-O custo de rodar uma rede Híbrida subindo a Merkle Tree é o custo da infraestrutura da rede local mais o upload da hash da arvore, dessa forma o custo total é:
+O custo de rodar uma rede Híbrida subindo a Merkle Tree é o custo da infraestrutura da rede local mais o upload da hash da árvore, dessa forma, o custo total é:
 
-#### Ethereum
+Para os cálculos abaixo, considera-se o período de 30 dias com uma média de 1.000 requisições diárias.
+- Mainnet (Ethereum):
+- $$0,00098 + (30 \times (1000 \times 0,00014)) = 4,20098 \text{ USD}$$
+- Polygon:
+- $$0,0061 + (30 \times (1000 \times 0,011)) = 33,0061 \text{ USD}$$
 
-#### Hyperleger Fabric
+As tabelas abaixo apresentam o custo fixo da infraestrutura somado ao custo variável de ancoragem na rede escolhida.
+
+#### Ethereum (1 Nó)
+
+| Cenário | Custo Infra | Total com Mainnet | Total com Polygon |
+| :--- | :--- | :--- | :--- |
+| **6h - 21h (Brasil)** | $ 41,55 | **$ 45,75** ($ 41,55 + 4,20) | **$ 74,55** ($ 41,55 + 33,00) |
+| **24/7 (Brasil)** | $ 61,43 | **$ 65,63** ($ 61,43 + 4,20) | **$ 94,43** ($ 61,43 + 33,00) |
+
+#### Hyperledger Fabric (3 Nós)
+
+| Cenário | Custo Infra | Total com Mainnet | Total com Polygon |
+| :--- | :--- | :--- | :--- |
+| **6h - 21h (Brasil)** | $ 58,65 | **$ 62,85** ($ 58,65 + 4,20) | **$ 91,65** ($ 58,65 + 33,00) |
+| **24/7 (Brasil)** | $ 89,17 | **$ 93,37** ($ 89,17 + 4,20) | **$ 122,17** ($ 89,17 + 33,00) |
