@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arvore Rubro-Negra — Blockchain</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  header { background: #1a1f2e; border-bottom: 1px solid #2d3748; padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header h1 { font-size: 1rem; font-weight: 700; }
+  .status-bar { display: flex; gap: 10px; margin-left: auto; flex-wrap: wrap; align-items: center; }
+  .chip { background: #242940; border: 1px solid #2d3748; border-radius: 6px; padding: 4px 10px; font-size: .75rem; font-family: monospace; color: #a0aec0; }
+  .chip.ok { border-color: #48bb78; color: #48bb78; }
+  .chip.err { border-color: #fc8181; color: #fc8181; }
+
+  /* ── LAYOUT ── */
+  main { display: grid; grid-template-columns: 280px 1fr; flex: 1; }
+
+  /* ── SIDEBAR ── */
+  aside { background: #1a1f2e; border-right: 1px solid #2d3748; padding: 16px; overflow-y: auto; }
+  h2 { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #718096; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #2d3748; }
+  label { display: block; font-size: .72rem; color: #718096; margin-bottom: 3px; margin-top: 10px; }
+  label:first-of-type { margin-top: 0; }
+  input[type=text], input[type=number] { width: 100%; background: #242940; border: 1px solid #2d3748; border-radius: 5px; color: #e2e8f0; padding: 7px 10px; font-size: .82rem; font-family: monospace; }
+  input:focus { outline: none; border-color: #4299e1; }
+
+  .item-group { background: #141824; border: 1px solid #2d3748; border-radius: 6px; padding: 8px; margin-bottom: 6px; position: relative; }
+  .item-group input { background: #0f1117; margin-bottom: 5px; }
+  .item-group input:last-child { margin-bottom: 0; }
+  .btn-rm { position: absolute; top: 5px; right: 6px; background: none; border: none; color: #4a5568; cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 5px; }
+  .btn-rm:hover { color: #fc8181; }
+
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border: none; border-radius: 6px; font-size: .82rem; font-weight: 600; cursor: pointer; transition: opacity .15s; width: 100%; margin-top: 8px; }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-blue  { background: #3182ce; color: #fff; }
+  .btn-ghost { background: #242940; color: #a0aec0; border: 1px solid #2d3748; font-size: .76rem; }
+  .btn-sm    { width: auto; margin-top: 0; padding: 5px 12px; font-size: .76rem; }
+
+  /* ── TREE PANEL ── */
+  .tree-area { background: #0a0d14; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 24px; flex: 1; }
+  #tree-svg { display: block; }
+  .tree-node { cursor: pointer; }
+  .empty-msg { color: #3d4a5c; font-size: .9rem; margin: auto; align-self: center; }
+
+  /* ── DETAILS OVERLAY ── */
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10; align-items: center; justify-content: center; }
+  #overlay.open { display: flex; }
+  .modal { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 10px; width: 440px; max-width: 95vw; max-height: 80vh; overflow-y: auto; padding: 20px; position: relative; }
+  .modal-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #718096; cursor: pointer; font-size: 1.3rem; line-height: 1; }
+  .modal-close:hover { color: #e2e8f0; }
+  .node-key { font-size: 1.6rem; font-weight: 700; font-family: monospace; margin-bottom: 6px; }
+  .color-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .color-badge.RED { background: #5c1a1a; color: #fc8181; border: 1px solid #e53e3e; }
+  .color-badge.BLACK { background: #1a202c; color: #a0aec0; border: 1px solid #4a5568; }
+  .data-section { margin-top: 14px; }
+  .data-section h3 { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #718096; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #2d3748; }
+  .data-item { background: #242940; border: 1px solid #2d3748; border-radius: 5px; padding: 8px 10px; margin-bottom: 5px; font-size: .76rem; }
+  .data-item .id { color: #718096; font-size: .68rem; }
+  .data-item .hash { font-family: monospace; color: #4299e1; word-break: break-all; font-size: .7rem; margin-top: 2px; }
+  .no-data { color: #718096; font-style: italic; font-size: .78rem; padding: 8px 0; }
+
+  /* ── LOG BAR ── */
+  #log { background: #1a1f2e; border-top: 1px solid #2d3748; padding: 7px 20px; font-size: .76rem; color: #718096; min-height: 34px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  #log a { color: #4299e1; text-decoration: none; }
+  #log a:hover { text-decoration: underline; }
+  .spin { display: inline-block; width: 11px; height: 11px; border: 2px solid #2d3748; border-top-color: #4299e1; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #0f1117; }
+  ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+<header>
+  <h1>&#127795; Arvore Rubro-Negra — Blockchain</h1>
+  <div class="status-bar">
+    <span class="chip" id="chip-net">...</span>
+    <span class="chip" id="chip-wal">...</span>
+    <span class="chip" id="chip-bal">...</span>
+    <span class="chip ok" id="chip-st">&#9679; Conectado</span>
+    <button class="btn btn-ghost btn-sm" onclick="reloadTree()">&#8635; Recarregar Arvore</button>
+  </div>
+</header>
+
+<!-- ── MAIN ────────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- SIDEBAR: formulário de inserção -->
+  <aside>
+    <h2>Inserir No</h2>
+
+    <label>Chave (int256)</label>
+    <input type="number" id="inp-key" placeholder="Ex: 42" step="1">
+
+    <div style="margin-top:14px">
+      <h2>Metrics</h2>
+      <div id="met-list"></div>
+      <button class="btn btn-ghost" onclick="addMetric()">+ Adicionar Metric</button>
+    </div>
+
+    <div style="margin-top:14px">
+      <h2>Evidences</h2>
+      <div id="evd-list"></div>
+      <button class="btn btn-ghost" onclick="addEvidence()">+ Adicionar Evidence</button>
+    </div>
+
+    <p style="font-size:.67rem;color:#4a5568;margin-top:10px;line-height:1.5">
+      Hash: cole <code style="color:#4299e1">0x…(64 hex)</code> ou texto livre (convertido automaticamente).
+    </p>
+
+    <button class="btn btn-blue" id="btn-ins" onclick="doInsert()">
+      &#9654; Inserir na Blockchain
+    </button>
+  </aside>
+
+  <!-- AREA DA ARVORE -->
+  <div class="tree-area" id="tree-area">
+    <svg id="tree-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+</main>
+
+<!-- ── LOG BAR ─────────────────────────────────────────────────────────── -->
+<div id="log"><span id="log-txt">Carregando...</span></div>
+
+<!-- ── MODAL DE DETALHES ───────────────────────────────────────────────── -->
+<div id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeOverlay()">&#xd7;</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+var currentRoot = null;
+var mc = 0, ec = 0;
+
+window.addEventListener('load', function () {
+  loadStatus();
+  reloadTree();
+});
+
+// ── STATUS ───────────────────────────────────────────────────────────────────
+function loadStatus() {
+  fetch('/api/status').then(r => r.json()).then(d => {
+    document.getElementById('chip-net').textContent = d.network || 'sepolia';
+    document.getElementById('chip-wal').textContent = d.wallet.slice(0,6) + '…' + d.wallet.slice(-4);
+    document.getElementById('chip-bal').textContent = parseFloat(d.balance).toFixed(4) + ' ETH';
+  }).catch(e => {
+    var s = document.getElementById('chip-st');
+    s.textContent = '● Erro'; s.className = 'chip err';
+    log('Erro ao conectar: ' + e.message, true);
+  });
+}
+
+// ── ARVORE ───────────────────────────────────────────────────────────────────
+function reloadTree() {
+  log('<span class="spin"></span> Carregando arvore da blockchain...');
+  fetch('/api/tree').then(r => r.json()).then(d => {
+    currentRoot = d.root;
+    renderTree(currentRoot);
+    log(currentRoot ? '✓ Arvore carregada — clique em um no para ver detalhes' : '○ Arvore vazia — insira o primeiro no');
+  }).catch(e => log('Erro ao carregar arvore: ' + e.message, true));
+}
+
+function renderTree(root) {
+  var svg = document.getElementById('tree-svg');
+  svg.innerHTML = '';
+  var area = document.getElementById('tree-area');
+
+  if (!root) {
+    svg.removeAttribute('width'); svg.removeAttribute('height');
+    var msg = document.createElement('div');
+    msg.className = 'empty-msg';
+    msg.textContent = 'Arvore vazia — insira o primeiro no';
+    area.innerHTML = '';
+    area.appendChild(msg);
+    return;
+  }
+
+  // re-insere o svg caso tenha sido removido
+  if (!area.contains(svg)) { area.innerHTML = ''; area.appendChild(svg); }
+
+  // posiciona nós em ordem
+  var xi = 0;
+  function pos(n, d) {
+    if (!n) return;
+    pos(n.left, d + 1);
+    n._x = xi++; n._y = d;
+    pos(n.right, d + 1);
+  }
+  pos(root, 0);
+
+  var total = xi;
+  var depth = treeDepth(root);
+  var R     = 26;
+  var hGap  = Math.max(60, Math.min(90, 700 / Math.max(total, 1)));
+  var vGap  = 82;
+  var padX  = 50, padY = 50;
+  var W = Math.max(padX * 2 + (total - 1) * hGap, 400);
+  var H = Math.max(padY * 2 + (depth - 1) * vGap, 160);
+
+  svg.setAttribute('width',   W);
+  svg.setAttribute('height',  H);
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+  var px = n => padX + n._x * hGap;
+  var py = n => padY + n._y * vGap;
+
+  // arestas
+  (function edges(n) {
+    if (!n) return;
+    [n.left, n.right].forEach(c => {
+      if (!c) return;
+      svg.appendChild(mk('line', { x1:px(n), y1:py(n), x2:px(c), y2:py(c), stroke:'#2a3347', 'stroke-width':'2' }));
+    });
+    edges(n.left); edges(n.right);
+  })(root);
+
+  // nós
+  (function nodes(n) {
+    if (!n) return;
+    var isRed = n.color === 'RED';
+    var g = mk('g', { class: 'tree-node' });
+    g.addEventListener('click', () => openNode(n.key, n.color));
+    g.appendChild(mk('circle', {
+      cx: px(n), cy: py(n), r: R,
+      fill:   isRed ? '#9b2335' : '#1e2535',
+      stroke: isRed ? '#e53e3e' : '#4a5568',
+      'stroke-width': '1.5'
+    }));
+    var key = n.key;
+    var fs  = key.length > 6 ? '9' : key.length > 4 ? '11' : '13';
+    var txt = mk('text', { x: px(n), y: py(n) + 5, 'text-anchor': 'middle', fill: '#e2e8f0', 'font-size': fs, 'font-weight': 'bold', 'font-family': 'monospace', 'pointer-events': 'none' });
+    txt.textContent = key;
+    g.appendChild(txt);
+    svg.appendChild(g);
+    nodes(n.left); nodes(n.right);
+  })(root);
+}
+
+function mk(tag, attrs) {
+  var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
+  return el;
+}
+
+function treeDepth(n) { return n ? 1 + Math.max(treeDepth(n.left), treeDepth(n.right)) : 0; }
+
+// ── MODAL DE DETALHES ────────────────────────────────────────────────────────
+function openNode(key, color) {
+  var body = document.getElementById('modal-body');
+  body.innerHTML =
+    '<div class="node-key">' + key + '</div>' +
+    '<span class="color-badge ' + color + '">' + color + '</span>' +
+    '<br><span class="spin" style="margin-top:12px;display:inline-block"></span>';
+  document.getElementById('overlay').classList.add('open');
+
+  Promise.all([
+    fetch('/api/metrics?key='   + key).then(r => r.json()),
+    fetch('/api/evidences?key=' + key).then(r => r.json()),
+  ]).then(([metrics, evidences]) => {
+    body.innerHTML =
+      '<div class="node-key">' + key + '</div>' +
+      '<span class="color-badge ' + color + '">' + color + '</span>' +
+      section('Metrics',   metrics) +
+      section('Evidences', evidences);
+  }).catch(e => {
+    body.innerHTML += '<div class="no-data">Erro: ' + e.message + '</div>';
+  });
+}
+
+function section(title, items) {
+  var rows = items.length === 0
+    ? '<div class="no-data">Nenhum item</div>'
+    : items.map(i =>
+        '<div class="data-item"><div class="id">ID: ' + i.id + '</div><div class="hash">' + i.hash + '</div></div>'
+      ).join('');
+  return '<div class="data-section"><h3>' + title + ' (' + items.length + ')</h3>' + rows + '</div>';
+}
+
+function closeModal(e) { if (e.target === document.getElementById('overlay')) closeOverlay(); }
+function closeOverlay() { document.getElementById('overlay').classList.remove('open'); }
+
+// ── FORMULARIO DE INSERÇÃO ───────────────────────────────────────────────────
+function addMetric() {
+  var id = mc++;
+  var d = document.createElement('div');
+  d.className = 'item-group'; d.id = 'met-' + id;
+  d.innerHTML =
+    '<button class="btn-rm" onclick="rm(\'met-' + id + '\')">&#xd7;</button>' +
+    '<input type="number" placeholder="ID (uint256)" id="mid-' + id + '" min="0" style="margin-bottom:5px">' +
+    '<input type="text"   placeholder="Hash ou texto livre" id="mhash-' + id + '">';
+  document.getElementById('met-list').appendChild(d);
+}
+
+function addEvidence() {
+  var id = ec++;
+  var d = document.createElement('div');
+  d.className = 'item-group'; d.id = 'evd-' + id;
+  d.innerHTML =
+    '<button class="btn-rm" onclick="rm(\'evd-' + id + '\')">&#xd7;</button>' +
+    '<input type="number" placeholder="ID (uint256)" id="eid-' + id + '" min="0" style="margin-bottom:5px">' +
+    '<input type="text"   placeholder="Hash ou texto livre" id="ehash-' + id + '">';
+  document.getElementById('evd-list').appendChild(d);
+}
+
+function rm(id) { var el = document.getElementById(id); if (el) el.remove(); }
+
+function collectList(listId, pfxId, pfxHash) {
+  var result = [];
+  document.getElementById(listId).querySelectorAll('.item-group').forEach(item => {
+    var idInp   = item.querySelector('input[type="number"]');
+    var hashInp = item.querySelector('input[type="text"]');
+    var idVal   = idInp   ? idInp.value.trim()   : '';
+    var hashVal = hashInp ? hashInp.value.trim() : '';
+    if (idVal !== '' && hashVal !== '') result.push({ id: idVal, hash: hashVal });
+  });
+  return result;
+}
+
+async function doInsert() {
+  var key = document.getElementById('inp-key').value.trim();
+  if (!key) { log('Informe uma chave (int256)', true); return; }
+
+  var btn = document.getElementById('btn-ins');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  log('<span class="spin"></span> Enviando transacao para a Sepolia...');
+
+  try {
+    var res = await fetch('/api/insert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key,
+        metrics:   collectList('met-list'),
+        evidences: collectList('evd-list'),
+      }),
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    log('✓ Confirmada no bloco ' + data.blockNumber +
+        ' — <a href="https://sepolia.etherscan.io/tx/' + data.hash + '" target="_blank">Ver no Etherscan &#8599;</a>');
+
+    document.getElementById('inp-key').value = '';
+    document.getElementById('met-list').innerHTML = '';
+    document.getElementById('evd-list').innerHTML = '';
+    mc = 0; ec = 0;
+    reloadTree();
+  } catch (e) {
+    log('Erro: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#9654; Inserir na Blockchain';
+  }
+}
+
+function log(html, isErr) {
+  var el = document.getElementById('log-txt');
+  el.innerHTML = html;
+  el.style.color = isErr ? '#fc8181' : '';
+}
+</script>
+</body>
+</html>
